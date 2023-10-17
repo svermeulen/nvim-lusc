@@ -28,7 +28,7 @@ local record nvim_lusc
       log_handler: function(string)
       generate_debug_names:boolean
       on_completed: function(err:ErrorGroup)
-      warn_on_unsafe_quit: boolean
+      wait_for_cancel_on_quit: boolean
    end
 end
 
@@ -37,8 +37,8 @@ function nvim_lusc.setup(opts:nvim_lusc.Opts)
 
    opts = opts or {}
 
-   if opts.warn_on_unsafe_quit == nil then
-      opts.warn_on_unsafe_quit = true
+   if opts.wait_for_cancel_on_quit == nil then
+      opts.wait_for_cancel_on_quit = true
    end
 
    local on_completed:function(err:ErrorGroup)
@@ -73,7 +73,7 @@ function nvim_lusc.setup(opts:nvim_lusc.Opts)
       on_completed =  on_completed,
    })
 
-   if opts.warn_on_unsafe_quit then
+   if opts.wait_for_cancel_on_quit then
       vim.api.nvim_create_autocmd('VimLeavePre', {
          pattern = '*', 
          callback = function()
@@ -81,10 +81,10 @@ function nvim_lusc.setup(opts:nvim_lusc.Opts)
                lusc.stop {
                   move_on_after = 0,
                   on_completed = function()
-                     vim.cmd("echom 'Lusc cancelled all jobs successfully.  Shutdown can proceed safely now'")
+                     vim.cmd("echom 'All lusc jobs cancelled successfully.  Shutdown can proceed safely now'")
                   end,
                }
-               vim.fn.input("Lusc failed to shut down gracefully (there are jobs still running).  To fix, call lusc.stop() instead or use set warn_on_unsafe_quit option to just suppress this warning. See docs for more details.  Press enter to continue...")
+               vim.fn.input("Waiting for all Lusc jobs to cancel... Press enter to quit immediately")
             end
          end,
       })
