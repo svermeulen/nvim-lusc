@@ -48,7 +48,17 @@ local ChannelImpl = {}
 
 
 
-local lusc = {Scheduler = {}, DefaultScheduler = {}, Channel = {}, Opts = {}, ErrorGroup = {}, Task = {Opts = {}, }, Event = {}, CancelledError = {}, DeadlineOpts = {}, CancelScope = {Opts = {}, ShortcutOpts = {}, Result = {}, }, Nursery = {Opts = {}, }, _Runner = {}, }
+local lusc = {Scheduler = {}, DefaultScheduler = {}, Channel = {}, Opts = {}, ErrorGroup = {}, Task = {Opts = {}, }, Event = {}, CancelledError = {}, StopOpts = {}, DeadlineOpts = {}, CancelScope = {Opts = {}, ShortcutOpts = {}, Result = {}, }, Nursery = {Opts = {}, }, _Runner = {}, }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1362,6 +1372,12 @@ function lusc._Runner.new(opts)
       util.assert(scheduler ~= nil)
    end
 
+   local on_completed_handlers = {}
+
+   if opts.on_completed then
+      table.insert(on_completed_handlers, opts.on_completed)
+   end
+
    return setmetatable(
    {
       _tasks_by_coro = {},
@@ -1370,6 +1386,7 @@ function lusc._Runner.new(opts)
       _has_stopped = false,
       _main_nursery = nil,
       _main_task = nil,
+      _on_completed_handlers = on_completed_handlers,
       _opts = opts,
       _is_within_task_loop = false,
       _stop_requested_event = nil,
@@ -1777,10 +1794,14 @@ function lusc._Runner:_stop_requested()
    return self._stop_requested_event.is_set
 end
 
-function lusc._Runner:_stop(deadline_opts)
+function lusc._Runner:_stop(opts)
    util.assert(self._has_started)
 
-   deadline_opts = deadline_opts or {}
+   opts = opts or {}
+
+   if opts.on_completed then
+      table.insert(self._on_completed_handlers, opts.on_completed)
+   end
 
    if self._has_stopped then
       util.assert(self._stop_requested_event.is_set)
@@ -1798,6 +1819,13 @@ function lusc._Runner:_stop(deadline_opts)
 
       self._stop_requested_event:set()
    end
+
+   local deadline_opts = {
+      move_on_after = opts.move_on_after,
+      move_on_at = opts.move_on_at,
+      fail_after = opts.fail_after,
+      fail_at = opts.fail_at,
+   }
 
    if self._main_nursery == nil then
       self._main_nursery_deadline_opts = deadline_opts
@@ -1845,8 +1873,11 @@ function lusc._Runner:_step()
             util.assert(not self._has_stopped)
             self._has_stopped = true
             self._scheduler:dispose()
-            util.assert(self._opts.on_completed ~= nil)
-            self._opts.on_completed(self._root_error)
+            util.assert(#self._on_completed_handlers > 0)
+
+            for _, handler in ipairs(self._on_completed_handlers) do
+               handler(self._root_error)
+            end
          else
             _log("Stop requested but tasks have not completed, despite task queue being empty.  One explanation is that we are waiting to be woken up by another luv process")
          end
@@ -2015,6 +2046,8 @@ end
 
 function lusc.start(opts)
    opts = opts or {}
+
+   util.assert(opts.on_completed ~= nil, "Must provide on_completed handler to receive root errors")
 
    local new_opts = util.shallow_clone(opts)
    new_opts.on_completed = function(root_error)
