@@ -9,7 +9,7 @@ This programming paradigm was first popularized by the python library [Trio](htt
 
 If you aren't familiar with Trio - then in short, Structured Concurrency makes asynchronous tasks an order of magnitude easier to manage.  It achieves this by making the structure of code match the hierarchical structure of the async operations, which results in many benefits.  For more details, you might check out the [trio docs](https://trio.readthedocs.io/en/stable/reference-core.html), or [these articles](https://gist.github.com/belm0/4c6d11f47ccd31a231cde04616d6bb22) (which lusc was based on)
 
-Note also that this is just the neovim integration of the [Lusc](https://github.com/svermeulen/lusc) library.  [Lusc](https://github.com/svermeulen/lusc) can also be used directly for pure Lua projects that exist outside of Neovim.
+Note also that this is just the neovim integration of the [Lusc](https://github.com/svermeulen/lusc_luv) library.  [Lusc](https://github.com/svermeulen/lusc_luv) can also be used directly for pure Lua projects that exist outside of Neovim.
 
 Installation
 ---
@@ -52,7 +52,7 @@ vim.keymap.set('n', '<space>t', function()
 end)
 ```
 
-Of course, this is just a simple example.  For details on other features (eg. channels, cancellation, events, cancel scopes, shielding, nurseries, etc etc) I recommend reading the [lusc docs](https://github.com/svermeulen/lusc) or the [Trio docs](https://github.com/python-trio/trio) (since, even though Trio is a python library, lusc tries to exactly mimic its API in lua)
+Of course, this is just a simple example.  For details on other features (eg. channels, cancellation, events, cancel scopes, shielding, nurseries, etc etc) I recommend reading the [lusc docs](https://github.com/svermeulen/lusc_luv) or the [Trio docs](https://github.com/python-trio/trio) (since, even though Trio is a python library, lusc tries to exactly mimic its API in lua)
 
 Options
 ---
@@ -72,6 +72,11 @@ require('nvim-lusc').setup {
   generate_debug_names = false, -- Adds extra debugging info when logging is enabled
 }
 ```
+
+Integration with Luv
+---
+
+Lusc is built on top of the Luv event loop, and since Luv comes with many other async methods, Lusc comes built in with adapter methods that convert from callback-based to lusc-based.  See [Lusc docs](https://github.com/svermeulen/lusc_luv#usage-with-luv-api) for more information on these methods.
 
 Graceful Shutdown
 ---
