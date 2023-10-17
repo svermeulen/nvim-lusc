@@ -84,7 +84,7 @@ function nvim_lusc.setup(opts:nvim_lusc.Opts)
                      vim.fn.feedkeys(vim.api.nvim_replace_termcodes("<cr>", true, false, true), "t")
                   end,
                }
-               vim.fn.input("Waiting for all Lusc jobs to cancel... Press enter to quit immediately")
+               vim.fn.input("Waiting for all Lusc jobs to cancel... Press enter to quit anyway")
             end
          end,
       })

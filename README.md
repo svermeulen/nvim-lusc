@@ -9,7 +9,7 @@ This programming paradigm was first popularized by the python library [Trio](htt
 
 If you aren't familiar with Trio - then in short, Structured Concurrency makes asynchronous tasks an order of magnitude easier to manage.  It achieves this by making the structure of code match the hierarchical structure of the async operations, which results in many benefits.  For more details, you might check out the [trio docs](https://trio.readthedocs.io/en/stable/reference-core.html), or [these articles](https://gist.github.com/belm0/4c6d11f47ccd31a231cde04616d6bb22) (which lusc was based on)
 
-Note also that this is just the neovim integration of the [Lusc](https://github.com/svermeulen/lusc) library.  Lusc can be used directly for pure Lua projects that exist outside of Neovim.
+Note also that this is just the neovim integration of the [Lusc](https://github.com/svermeulen/lusc) library.  [Lusc](https://github.com/svermeulen/lusc) can also be used directly for pure Lua projects that exist outside of Neovim.
 
 Installation
 ---
@@ -36,7 +36,7 @@ require('nvim-lusc').setup()
 Example
 ---
 
-After adding the following to your init.lua, if you hit `<space>t` you should see an async countdown.
+After adding the following to your `init.lua`, if you hit `<space>t` you should see an async countdown.
 
 ```lua
 local lusc = require'lusc'
@@ -76,7 +76,7 @@ require('nvim-lusc').setup {
 Graceful Shutdown
 ---
 
-One problem with running tasks asynchronously is that they might be in the middle of an operation when the user decides to quit.  Lusc solves this problem by blocking on vim exit until the jobs are successfully cancelled.  Note however that you can turn this behaviour off using the `wait_for_cancel_on_quit` flag.
+One problem with running tasks asynchronously is that they might be in the middle of an operation when the user decides to quit.  Lusc solves this problem by blocking on vim exit until the jobs are successfully cancelled.
 
 Usually this happens quickly enough that it doesn't add noticeable time to vim exit.  However, jobs can also be `shielded` which prevents them from being cancelled immediately, and this can cause vim exit to block. To see what this looks like, try changing our countdown map above to use the `shielded` flag like this instead:
 
@@ -98,7 +98,7 @@ If you then hit `<space>t` again, and then immediately quit with `:qa`, then you
 
 `Waiting for all Lusc jobs to cancel... Press enter to quit immediately`
 
-So in these cases, you can either press enter to stop waiting for your async tasks, or just wait and it should close automatically when it completes.
+So in these cases, where some jobs are blocking via shielded flag, you can either press enter to stop waiting for your async tasks, or just wait, and neovim should close automatically when it completes.
 
-You might also want to have explicit control over when lusc tasks are stopped/cancelled.  If so, we recommend setting `wait_for_cancel_on_quit` flag to false then explicitly calling `lusc.stop` yourself.
+You might also want to have explicit control over when lusc tasks are stopped/cancelled.  If so, you can disable the above behvaiour by setting `wait_for_cancel_on_quit` flag to false then explicitly calling `lusc.stop` yourself.
 
