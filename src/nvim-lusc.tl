@@ -78,8 +78,8 @@ function nvim_lusc.setup(opts:nvim_lusc.Opts)
          pattern = '*', 
          callback = function()
             if lusc.has_started() and lusc.has_jobs_running() then
-               lusc.cancel_all()
                lusc.stop {
+                  move_on_after = 0,
                   on_completed = function()
                      vim.cmd("Lusc cancelled all jobs successfully")
                   end,
