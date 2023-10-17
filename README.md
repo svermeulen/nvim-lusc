@@ -45,6 +45,32 @@ Example
 ```lua
 local lusc = require'lusc'
 
-TBD
+-- <space>t to run this test
+vim.keymap.set('n', '<space>t', function()
+  lusc.schedule(function()
+    for i=5,1,-1 do
+      vim.cmd("echom " .. tostring(i))
+      lusc.await_sleep(1)
+    end
+  end)
+end)
 ```
 
+Extra Configuration
+---
+
+The following will is equivalent to `require('nvim-lusc').setup()` since these are the defaults:
+
+```lua
+require('nvim-lusc').setup {
+  warn_on_unsafe_quit = true,
+  on_completed = function(err)
+    if err ~= nil then
+      vim.notify("Lusc completed with errors. Details: " .. tostring(err))
+    end
+  end,
+  enable_logging = false,
+  log_handler = function(msg) vim.cmd("echom " .. msg) end,
+  generate_debug_names = false,
+}
+```
