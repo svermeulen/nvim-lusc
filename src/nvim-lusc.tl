@@ -41,7 +41,7 @@ function nvim_lusc.setup()
    vim.api.nvim_create_autocmd('VimLeavePre', {
       pattern = '*', 
       callback = function()
-         if lusc.has_started then
+         if lusc.has_started() then
             vim.fn.input("Lusc failed to shut down gracefully.  lusc.stop should be called first instead.  Press enter to continue closing...")
          end
       end,
