@@ -1,5 +1,7 @@
 
-# nvim-lusc - Structured Async/Concurrency for Neovim
+# nvim-lusc
+
+## Structured Async/Concurrency for Neovim
 
 This library brings the concepts of [Structured Concurrency](https://en.wikipedia.org/wiki/Structured_concurrency) to Lua in Neovim.  The name is an abbrevriation of this (**LU**a **S**tructured **C**oncurrency).
 
