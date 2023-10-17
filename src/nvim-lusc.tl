@@ -81,7 +81,7 @@ function nvim_lusc.setup(opts:nvim_lusc.Opts)
                lusc.stop {
                   move_on_after = 0,
                   on_completed = function()
-                     vim.cmd("Lusc cancelled all jobs successfully")
+                     vim.cmd("echom 'Lusc cancelled all jobs successfully.  Shutdown can proceed safely now'")
                   end,
                }
                vim.fn.input("Lusc failed to shut down gracefully (there are jobs still running).  To fix, call lusc.stop() instead or use set warn_on_unsafe_quit option to just suppress this warning. See docs for more details.  Press enter to continue...")
