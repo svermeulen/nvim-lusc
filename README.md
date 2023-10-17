@@ -57,18 +57,40 @@ Of course, this is just a simple example.  For details on other features (eg. ch
 Graceful Shutdown
 ---
 
-One problem with running tasks asynchronously is that they might be in the middle of an operation when the user decides to quit.  Ideally we allow these jobs to be cancelled so that they clean up any resources they are using.  By default, nvim-lusc will warn the user when this happens.  So for example, if you use the code from the previous Example section, and run `<space>t`, then quit neovim before it completes the countdown, you should see this warning:
+One problem with running tasks asynchronously is that they might be in the middle of an operation when the user decides to quit.  Ideally we allow these jobs to be cancelled so that they clean up any resources they are using.  By default, nvim-lusc will block on vim exit until all tasks are cancelled (however you can turn this off with the wait_for_cancel_on_quit flag).
 
+To see what this looks like, try changing our countdown map above to use the `shielded` flag like this instead:
 
+```lua
+-- <space>t to run this test
+vim.keymap.set('n', '<space>t', function()
+  lusc.schedule(function()
+    lusc.cancel_scope(function()
+      for i=5,1,-1 do
+        vim.cmd("echom " .. tostring(i))
+        lusc.await_sleep(1)
+      end
+    end, { shielded = true })
+  end)
+end)
+```
 
-Extra Configuration
+If you then hit `<space>t` again, and then immediately quit with `:qa`, then you should see this prompt:
+
+`Waiting for all Lusc jobs to cancel... Press enter to quit immediately`
+
+You can either press enter to stop waiting for the countdown, or just wait and it should close when it completes.
+
+If you want to control when this happens you can set `wait_for_cancel_on_quit` then explicitly call `lusc.stop`.
+
+Options
 ---
 
 The following will is equivalent to `require('nvim-lusc').setup()` since these are the defaults:
 
 ```lua
 require('nvim-lusc').setup {
-  warn_on_unsafe_quit = true,
+  wait_for_cancel_on_quit = true,
   on_completed = function(err)
     if err ~= nil then
       vim.notify("Lusc completed with errors. Details: " .. tostring(err))
