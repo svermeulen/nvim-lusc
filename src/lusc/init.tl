@@ -1873,8 +1873,11 @@ function lusc._Runner:_step()
             util.assert(not self._has_stopped)
             self._has_stopped = true
             self._scheduler:dispose()
-            util.assert(self._opts.on_completed ~= nil)
-            self._opts.on_completed(self._root_error)
+            util.assert(#self._on_completed_handlers > 0)
+
+            for _, handler in ipairs(self._on_completed_handlers) do
+               handler(self._root_error)
+            end
          else
             _log("Stop requested but tasks have not completed, despite task queue being empty.  One explanation is that we are waiting to be woken up by another luv process")
          end
@@ -2043,6 +2046,8 @@ end
 
 function lusc.start(opts:lusc.Opts)
    opts = opts or {}
+
+   util.assert(opts.on_completed ~= nil, "Must provide on_completed handler to receive root errors")
 
    local new_opts = util.shallow_clone(opts)
    new_opts.on_completed = function(root_error:lusc.ErrorGroup)
