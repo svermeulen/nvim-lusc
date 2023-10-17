@@ -161,6 +161,15 @@ local record lusc
       _trigger_scope: CancelScope
    end
 
+   record StopOpts
+      on_completed: function(err:ErrorGroup)
+      -- note: can only set one of these
+      move_on_after:number
+      move_on_at:number
+      fail_after:number
+      fail_at:number
+   end
+
    record DeadlineOpts
       -- note: can only set one of these
       move_on_after:number
@@ -250,6 +259,7 @@ local record lusc
       _has_stopped: boolean
       _main_nursery: Nursery
       _main_task: Task
+      _on_completed_handlers: {function(err:ErrorGroup)}
       _opts: Opts
       _is_within_task_loop:boolean
       _stop_requested_event:Event
@@ -286,7 +296,7 @@ local record lusc
    -- Note that this will only cancel tasks if one of the move_on* or fail_* options
    -- are provided.  Otherwise it will wait forever for tasks to complete gracefully
    -- Note also that if block_until_stopped is provided, it will block 
-   stop:function(opts:DeadlineOpts)
+   stop:function(opts:StopOpts)
 
    -- Long running tasks can check this periodically, and then shut down
    -- gracefully, instead of relying on cancels
@@ -1362,6 +1372,12 @@ function lusc._Runner.new(opts:lusc.Opts):lusc._Runner
       util.assert(scheduler ~= nil)
    end
 
+   local on_completed_handlers = {}
+
+   if opts.on_completed then
+      table.insert(on_completed_handlers, opts.on_completed)
+   end
+
    return setmetatable(
       {
          _tasks_by_coro = {},
@@ -1370,6 +1386,7 @@ function lusc._Runner.new(opts:lusc.Opts):lusc._Runner
          _has_stopped = false,
          _main_nursery = nil,
          _main_task = nil,
+         _on_completed_handlers = on_completed_handlers,
          _opts = opts,
          _is_within_task_loop = false,
          _stop_requested_event = nil,
@@ -1777,10 +1794,14 @@ function lusc._Runner:_stop_requested():boolean
    return self._stop_requested_event.is_set
 end
 
-function lusc._Runner:_stop(deadline_opts:lusc.DeadlineOpts)
+function lusc._Runner:_stop(opts:lusc.StopOpts)
    util.assert(self._has_started)
 
-   deadline_opts = deadline_opts or {}
+   opts = opts or {}
+
+   if opts.on_completed then
+      table.insert(self._on_completed_handlers, opts.on_completed)
+   end
 
    if self._has_stopped then
       util.assert(self._stop_requested_event.is_set)
@@ -1798,6 +1819,13 @@ function lusc._Runner:_stop(deadline_opts:lusc.DeadlineOpts)
       -- note that this might already have been set due to an error
       self._stop_requested_event:set()
    end
+
+   local deadline_opts = {
+      move_on_after = opts.move_on_after,
+      move_on_at = opts.move_on_at,
+      fail_after = opts.fail_after,
+      fail_at = opts.fail_at,
+   }
 
    if self._main_nursery == nil then
       self._main_nursery_deadline_opts = deadline_opts
@@ -1965,7 +1993,7 @@ function lusc.stop_requested():boolean
    return lusc._get_runner():_stop_requested()
 end
 
-function lusc.stop(opts:lusc.DeadlineOpts)
+function lusc.stop(opts:lusc.StopOpts)
    lusc._get_runner():_stop(opts)
 end
 
