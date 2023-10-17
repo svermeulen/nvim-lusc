@@ -3,7 +3,7 @@
 
 ## Structured Async/Concurrency for Neovim
 
-This library brings the concepts of [Structured Concurrency](https://en.wikipedia.org/wiki/Structured_concurrency) to Lua in Neovim.  The name is an abbrevriation of this (**LU**a **S**tructured **C**oncurrency).
+This library brings the concept of [Structured Concurrency](https://en.wikipedia.org/wiki/Structured_concurrency) to Lua in Neovim.  The name is an abbrevriation of this (**LU**a **S**tructured **C**oncurrency).
 
 This programming paradigm was first popularized by the python library [Trio](https://github.com/python-trio/trio) and Lusc almost exactly mirrors the Trio API except in Lua.  So if you are already familiar with Trio then you should be able to immediately understand and use the Lusc API.
 
@@ -52,14 +52,33 @@ vim.keymap.set('n', '<space>t', function()
 end)
 ```
 
-Of course, this is just a simple example.  For details on other features (eg. channels, cancellation, events, cancel scopes, shielding, nurseries, etc etc) I recommend reading the docs from the [lusc docs](https://github.com/svermeulen/lusc), or the [Trio docs](https://github.com/python-trio/trio) (since, even though Trio is a python library, lusc tries to exactly mimic its API in lua)
+Of course, this is just a simple example.  For details on other features (eg. channels, cancellation, events, cancel scopes, shielding, nurseries, etc etc) I recommend reading the [lusc docs](https://github.com/svermeulen/lusc) or the [Trio docs](https://github.com/python-trio/trio) (since, even though Trio is a python library, lusc tries to exactly mimic its API in lua)
+
+Options
+---
+
+The following is equivalent to `require('nvim-lusc').setup()` since these are the defaults:
+
+```lua
+require('nvim-lusc').setup {
+  wait_for_cancel_on_quit = true,
+  on_completed = function(err)
+    if err ~= nil then
+      vim.notify("Lusc completed with errors. Details: " .. tostring(err))
+    end
+  end,
+  enable_logging = false,
+  log_handler = function(msg) vim.cmd("echom " .. msg) end,
+  generate_debug_names = false, -- Adds extra debugging info when logging is enabled
+}
+```
 
 Graceful Shutdown
 ---
 
-One problem with running tasks asynchronously is that they might be in the middle of an operation when the user decides to quit.  Ideally we allow these jobs to be cancelled so that they clean up any resources they are using.  By default, nvim-lusc will block on vim exit until all tasks are cancelled (however you can turn this off with the wait_for_cancel_on_quit flag).
+One problem with running tasks asynchronously is that they might be in the middle of an operation when the user decides to quit.  Lusc solves this problem by blocking on vim exit until the jobs are successfully cancelled.  Note however that you can turn this behaviour off using the `wait_for_cancel_on_quit` flag.
 
-To see what this looks like, try changing our countdown map above to use the `shielded` flag like this instead:
+Usually this happens quickly enough that it doesn't add noticeable time to vim exit.  However, jobs can also be `shielded` which prevents them from being cancelled immediately, and this can cause vim exit to block. To see what this looks like, try changing our countdown map above to use the `shielded` flag like this instead:
 
 ```lua
 -- <space>t to run this test
@@ -79,25 +98,7 @@ If you then hit `<space>t` again, and then immediately quit with `:qa`, then you
 
 `Waiting for all Lusc jobs to cancel... Press enter to quit immediately`
 
-You can either press enter to stop waiting for the countdown, or just wait and it should close when it completes.
+So in these cases, you can either press enter to stop waiting for your async tasks, or just wait and it should close automatically when it completes.
 
-If you want to control when this happens you can set `wait_for_cancel_on_quit` then explicitly call `lusc.stop`.
+You might also want to have explicit control over when lusc tasks are stopped/cancelled.  If so, we recommend setting `wait_for_cancel_on_quit` flag to false then explicitly calling `lusc.stop` yourself.
 
-Options
----
-
-The following will is equivalent to `require('nvim-lusc').setup()` since these are the defaults:
-
-```lua
-require('nvim-lusc').setup {
-  wait_for_cancel_on_quit = true,
-  on_completed = function(err)
-    if err ~= nil then
-      vim.notify("Lusc completed with errors. Details: " .. tostring(err))
-    end
-  end,
-  enable_logging = false,
-  log_handler = function(msg) vim.cmd("echom " .. msg) end,
-  generate_debug_names = false,
-}
-```
