@@ -331,6 +331,8 @@ local record lusc
    cancel_all:function()
    open_channel:function<T>(max_buffer_size:integer):Channel<T>
 
+   has_jobs_running:function():boolean
+
    get_running_task:function():Task
    try_get_running_task:function():Task
 
@@ -1538,6 +1540,10 @@ function lusc._Runner:_try_get_running_task():lusc.Task
    return self._tasks_by_coro[coroutine.running()]
 end
 
+function lusc._Runner:_has_jobs_running():boolean
+   return not util.map_is_empty(self._tasks_by_coro)
+end
+
 function lusc._Runner:_get_running_task():lusc.Task
    local task = self:_try_get_running_task()
    util.assert(task ~= nil, "[lusc] Unable to find running task")
@@ -1965,6 +1971,10 @@ end
 
 function lusc.new_event():lusc.Event
    return lusc._get_runner():_new_event()
+end
+
+function lusc.has_jobs_running():boolean
+   return lusc._get_runner():_has_jobs_running()
 end
 
 function lusc.get_running_task():lusc.Task

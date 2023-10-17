@@ -339,6 +339,8 @@ local lusc = {Scheduler = {}, DefaultScheduler = {}, Channel = {}, Opts = {}, Er
 
 
 
+
+
 local function _remove_element(list, item)
    local index = util.index_of(list, item)
    util.assert(index ~= -1, "Attempted to remove item from array that does not exist in array")
@@ -1538,6 +1540,10 @@ function lusc._Runner:_try_get_running_task()
    return self._tasks_by_coro[coroutine.running()]
 end
 
+function lusc._Runner:_has_jobs_running()
+   return not util.map_is_empty(self._tasks_by_coro)
+end
+
 function lusc._Runner:_get_running_task()
    local task = self:_try_get_running_task()
    util.assert(task ~= nil, "[lusc] Unable to find running task")
@@ -1965,6 +1971,10 @@ end
 
 function lusc.new_event()
    return lusc._get_runner():_new_event()
+end
+
+function lusc.has_jobs_running()
+   return lusc._get_runner():_has_jobs_running()
 end
 
 function lusc.get_running_task()

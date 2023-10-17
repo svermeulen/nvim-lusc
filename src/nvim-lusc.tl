@@ -1,5 +1,6 @@
 
 local lusc <const> = require("lusc")
+local lusc_util <const> = require("lusc.internal.util")
 
 local record VimSchedulerAdapter
    _impl: lusc.DefaultScheduler
@@ -22,30 +23,66 @@ function VimSchedulerAdapter:dispose()
 end
 
 local record nvim_lusc
+   record Opts
+      enable_logging: boolean
+      log_handler: function(string)
+      generate_debug_names:boolean
+      on_completed: function(err:ErrorGroup)
+      warn_on_unsafe_quit: boolean
+   end
 end
 
-function nvim_lusc.setup()
+function nvim_lusc.setup(opts:nvim_lusc.Opts)
    assert(not lusc.has_started())
+
+   opts = opts or {}
+
+   if opts.warn_on_unsafe_quit == nil then
+      opts.warn_on_unsafe_quit = true
+   end
+
+   local on_completed:function(err:ErrorGroup)
+
+   if opts.enable_logging then
+      local log_handler = opts.log_handler
+
+      if log_handler == nil then
+         log_handler = function(msg:string)
+            vim.cmd("echom " .. msg)
+         end
+      end
+
+      lusc_util.set_log_handler(log_handler)
+   end
+
+   if opts.on_completed then
+      on_completed = opts.on_completed
+   else
+      on_completed = function(err:ErrorGroup)
+         if err ~= nil then
+            vim.notify("Lusc completed with errors. Details: " .. tostring(err))
+         end
+      end
+   end
 
    lusc.start({
       scheduler_factory = function():lusc.Scheduler
          return VimSchedulerAdapter.new() as lusc.Scheduler
       end,
-      on_completed = function(err:ErrorGroup)
-         if err ~= nil then
-            vim.notify("Lusc completed with errors. Details: " .. tostring(err))
-         end
-      end,
+      generate_debug_names = opts.generate_debug_names,
+      on_completed =  on_completed,
    })
 
-   vim.api.nvim_create_autocmd('VimLeavePre', {
-      pattern = '*', 
-      callback = function()
-         if lusc.has_started() then
-            vim.fn.input("Lusc failed to shut down gracefully.  lusc.stop should be called first instead.  Press enter to continue closing...")
-         end
-      end,
-   })
+   if opts.warn_on_unsafe_quit then
+      vim.api.nvim_create_autocmd('VimLeavePre', {
+         pattern = '*', 
+         callback = function()
+            if lusc.has_started() and lusc.has_jobs_running() then
+               vim.fn.input("Lusc failed to shut down gracefully (there are jobs still running).  To fix, call lusc.stop() instead or use set warn_on_unsafe_quit option to just suppress this warning. See docs for more details.  Press enter to continue...")
+            end
+         end,
+      })
+   end
 end
 
 return nvim_lusc
