@@ -31,6 +31,14 @@ function util.map_is_empty(values)
    return true
 end
 
+function util.map_size(values)
+   local count = 0
+   for _, _ in pairs(values) do
+      count = count + 1
+   end
+   return count
+end
+
 function util.binary_search(items, item, comparator)
    local low = 1
    local high = #items

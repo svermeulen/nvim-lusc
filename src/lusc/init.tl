@@ -1541,7 +1541,7 @@ function lusc._Runner:_try_get_running_task():lusc.Task
 end
 
 function lusc._Runner:_has_jobs_running():boolean
-   return not util.map_is_empty(self._tasks_by_coro)
+   return util.map_size(self._tasks_by_coro) > 1
 end
 
 function lusc._Runner:_get_running_task():lusc.Task
@@ -1974,6 +1974,9 @@ function lusc.new_event():lusc.Event
 end
 
 function lusc.has_jobs_running():boolean
+   if lusc._current_runner == nil then
+      return false
+   end
    return lusc._get_runner():_has_jobs_running()
 end
 

@@ -31,6 +31,14 @@ function util.map_is_empty<K, V>(values:{K:V}):boolean
    return true
 end
 
+function util.map_size<K, V>(values:{K:V}):integer
+   local count = 0
+   for _, _ in pairs(values) do
+      count = count + 1
+   end
+   return count
+end
+
 function util.binary_search<T>(items:{T}, item:T, comparator:function(T, T):integer):integer
    local low = 1
    local high = #items
