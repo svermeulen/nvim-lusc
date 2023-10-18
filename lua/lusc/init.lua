@@ -408,7 +408,7 @@ function lusc.DefaultScheduler:schedule(min_time, callback)
 
 
 
-      assert(self._step_timer:start(math.floor(delay * milliseconds_per_second) + 3, 0, function()
+      assert(self._step_timer:start(math.floor(delay * milliseconds_per_second), 0, function()
          local new_time = _get_time()
          if new_time < min_time then
             restart_timer()

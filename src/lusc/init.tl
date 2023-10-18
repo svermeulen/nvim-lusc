@@ -403,12 +403,7 @@ function lusc.DefaultScheduler:schedule(min_time:number, callback:function())
    local function restart_timer()
       self._step_timer:stop()
       local delay = math.max(0, min_time - _get_time())
-      -- We need to guarantee that we don't call the callback before the given minimum time
-      -- luve does not offer the same guarantee though, so need to 
-      -- We add 3ms just to avoid this from happening constantly, and happen semi-regularly instead,
-      -- and also to avoid issues with loss of precision, since according to luv docs, it takes an 
-      -- integer number of milliseconds
-      assert(self._step_timer:start(math.floor(delay * milliseconds_per_second) + 3, 0, function()
+      assert(self._step_timer:start(math.floor(delay * milliseconds_per_second), 0, function()
          local new_time = _get_time()
          if new_time < min_time then
             restart_timer()
