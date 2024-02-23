@@ -979,7 +979,9 @@ function lusc.CancelScope:cancel()
       end
 
       for _, child in ipairs(self._children) do
-         child:cancel()
+         if not child._shielded then
+            child:cancel()
+         end
       end
    end
 end
@@ -1041,7 +1043,7 @@ function lusc.CancelScope:_run(handler:function(scope:lusc.CancelScope)):lusc.Ca
 
       -- Cache the pending cancellations that don't apply to this scope then restore afterwards
       for cancel_err, _ in pairs(self._task._pending_cancellation_errors) do
-         if cancel_err._trigger_scope._depth < self._depth then
+         if cancel_err._trigger_scope._task ~= self._task or cancel_err._trigger_scope._depth < self._depth then
             table.insert(self._old_pending_errors, cancel_err)
             self._task._pending_cancellation_errors[cancel_err] = nil
          end
@@ -1105,8 +1107,6 @@ function lusc.CancelScope:_run(handler:function(scope:lusc.CancelScope)):lusc.Ca
                util.assert(self._task._pending_cancellation_errors[cancel_err] == nil)
                self._task._pending_cancellation_errors[cancel_err] = true
             end
-
-            self._task:_consider_scheduling_for_pending_errors()
          end
 
          util.assert(scope_stack[#scope_stack] == self)
@@ -1134,6 +1134,16 @@ function lusc.CancelScope:_run(handler:function(scope:lusc.CancelScope)):lusc.Ca
    end
 
    _log("[CancelScope] Completed running cancel scope [%s] without errors (has_cancelled = '%s', hit_deadline = '%s')", self._debug_name, self._has_cancelled, self._hit_deadline)
+
+   -- If we were shielding this block from a cancel error, we need to immediately trigger this now that we're done
+   if not util.map_is_empty(self._task._pending_cancellation_errors) then
+      local pending_cancel_errors = {}
+      for cancel_err, _ in pairs(self._task._pending_cancellation_errors) do
+         table.insert(pending_cancel_errors, cancel_err)
+      end
+      self._task._pending_cancellation_errors = {}
+      error(lusc.ErrorGroup.new(pending_cancel_errors), 0)
+   end
 
    return {
       was_cancelled = self._has_cancelled,
